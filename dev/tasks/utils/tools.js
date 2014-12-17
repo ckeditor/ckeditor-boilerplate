@@ -1,72 +1,23 @@
-/* jshint node: true */
+/* jshint node: true, es3: false */
 
 'use strict';
 
 var dirtyFiles,
 	ignoreList;
 
-module.exports = {
-	/**
-	 * Check if a task (including its optional target) is in the queue of tasks to be executed by Grunt.
-	 *
-	 * @param grunt {Object} The Grunt object.
-	 * @param task {String} The task name. May optionally include the target (e.g. 'task:target').
-	 * @returns {Boolean} "true" if the task is in the queue.
-	 */
-	checkTaskInQueue: function( grunt, task ) {
-		var cliTasks = grunt.cli.tasks;
+var tools = module.exports = {
+	getLinterTaskTargets: function() {
+		return {
+			all: function() {
+				return [ '**/*.js' ];
+			},
 
-		// Check if the task has been called directly.
-		var isDirectCall = ( cliTasks.indexOf( task ) > -1 );
-		// Check if this is a "default" call and that the task is inside "default".
-		var isDefaultTask = ( cliTasks.indexOf( 'default' ) > -1 ) || !cliTasks.length;
-		// Hacking Grunt hard.
-		var isTaskInDefault = isDefaultTask && ( grunt.task._tasks.default.info.indexOf( '"' + task + '"' ) > -1 );
-
-		return isDirectCall || isTaskInDefault;
-	},
-
-	/**
-	 * Configures a multi-task and defines targets that are queued to be run by Grunt.
-	 *
-	 * @param grunt {Object} The Grunt object.
-	 * @param options {Object} A list of options for the method. See the jscs and jshint tasks for example.
-	 */
-	setupMultitaskConfig: function( grunt, options ) {
-		var task = options.task;
-		var taskConfig = {};
-		var config = taskConfig[ task ] = {
-			options: options.defaultOptions
-		};
-
-		// "all" is the default target to be used if others are not to be run.
-		var all = options.targets.all;
-		var isAll = true;
-
-		delete options.targets.all;
-
-		Object.getOwnPropertyNames( options.targets ).forEach( function( target ) {
-			if ( this.checkTaskInQueue( grunt, task + ':' + target ) ) {
-				config[ target ] = options.targets[ target ]();
-				isAll = false;
+			git: function() {
+				return tools.getGitDirtyFiles().filter( function( file ) {
+					return ( /\.js$/ ).test( file );
+				} );
 			}
-		}, this );
-
-		if ( isAll ) {
-			config.all = all();
-		}
-
-		// Append .gitignore entries to the ignore list.
-		if ( options.addGitIgnore ) {
-			var ignoreProp = task + '.options.' + options.addGitIgnore;
-			var ignores = grunt.config.get( ignoreProp ) || [];
-
-			ignores = ignores.concat( this.getGitIgnore( grunt ) );
-			grunt.config.set( ignoreProp, ignores );
-		}
-
-		// Merge over configurations set in gruntfile.js.
-		grunt.config.merge( taskConfig );
+		};
 	},
 
 	/**

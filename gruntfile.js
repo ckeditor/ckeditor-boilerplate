@@ -2,32 +2,30 @@
 
 'use strict';
 
+var tools = require( './dev/tasks/utils/tools' );
+
 module.exports = function( grunt ) {
-	// First register the "default" task, so it can be analyzed by other tasks.
-	grunt.registerTask( 'default', [ 'jshint:git', 'jscs:git' ] );
-
-	// Files that will be ignored by the "jscs" and "jshint" tasks.
-	var ignoreFiles = [
-		// Automatically loaded from .gitignore. Add more if necessary.
-	];
-
 	// Basic configuration which will be overloaded by the tasks.
 	grunt.initConfig( {
 		pkg: grunt.file.readJSON( 'package.json' ),
 
-		jshint: {
-			options: {
-				ignores: ignoreFiles
-			}
-		},
+		// Files that will be ignored by the "jscs" and "jshint" tasks.
+		ignoreFiles: [
+			// Automatically loaded from .gitignore. Add more if necessary.
+		],
 
-		jscs: {
-			options: {
-				excludeFiles: ignoreFiles
-			}
+		jshint: tools.getLinterTaskTargets(),
+
+		jscs: tools.getLinterTaskTargets(),
+
+		lint: {
+			all: [ 'jshint:all', 'jscs:all' ],
+			git: [ 'jshint:git', 'jscs:git' ]
 		}
 	} );
 
 	// Finally load the tasks.
 	grunt.loadTasks( 'dev/tasks' );
+
+	grunt.registerTask( 'default', [ 'lint:git' ] );
 };
